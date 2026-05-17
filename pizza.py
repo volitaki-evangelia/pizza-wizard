@@ -1,16 +1,6 @@
 import streamlit as st
-import os
-import sys
-import io
-
-# 1. Αυτόματη εγκατάσταση του gtts αν λείπει
-try:
-    from gtts import gTTS
-except ModuleNotFoundError:
-    os.system(f"{sys.executable} -m pip install gtts")
-    from gtts import gTTS
-
 import google.generativeai as genai
+import os
 
 # Ρύθμιση της σελίδας
 st.set_page_config(page_title="The Great Pizza Rescue", page_icon="🍕", layout="centered")
@@ -54,6 +44,20 @@ st.markdown("""
         margin-top: 10px;
         color: #7D6608;
     }
+    .speak-btn {
+        background-color: #1ABC9C;
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        margin: 4px 2px;
+        cursor: pointer;
+        border-radius: 8px;
+        font-family: 'Comic Sans MS', sans-serif;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -81,17 +85,18 @@ safety_settings = [
 
 model = genai.GenerativeModel('gemini-2.5-flash', safety_settings=safety_settings)
 
-# Λειτουργία για μετατροπή κειμένου σε ήχο αποκλειστικά στη μνήμη (In-Memory BytesIO)
-def speak_text(text_to_speak):
-    # Αφαίρεση ειδικών χαρακτήρων και emojis για καθαρή ανάγνωση
-    clean_text = ''.join(c for c in text_to_speak if c.isalnum() or c.isspace() or c in ['.', ',', '?', '!'])
-    
-    # Χρήση του io.BytesIO για αποφυγή εγγραφής στο δίσκο (Read-only fix)
-    mp3_fp = io.BytesIO()
-    tts = gTTS(text=clean_text, lang='en', tld='com')
-    tts.write_to_fp(mp3_fp)
-    mp3_fp.seek(0)
-    return mp3_fp
+# Λειτουργία JavaScript για φωνητική ανάγνωση από τον browser του χρήστη
+def javascript_speak(text_to_speak, msg_id):
+    # Καθαρισμός κειμένου από μονά/διπλά εισαγωγικά για να μην σπάει η JavaScript
+    clean_text = text_to_speak.replace("'", "\\'").replace('"', '\\"').replace('\n', ' ')
+    js_code = f"""
+    <button class="speak-btn" onclick="
+        var msg = new SpeechSynthesisUtterance('{clean_text}');
+        msg.lang = 'en-US';
+        window.speechSynthesis.speak(msg);
+    ">🔊 Listen to the Wizard!</button>
+    """
+    return js_code
 
 # Αρχικοποίηση παιχνιδιού
 if "chat_history" not in st.session_state:
@@ -111,15 +116,11 @@ if "chat_history" not in st.session_state:
     st.session_state.chat_history.append({"role": "wizard", "text": response.text})
 
 # Εμφάνιση της συνομιλίας
-for message in st.session_state.chat_history:
+for i, message in enumerate(st.session_state.chat_history):
     if message["role"] == "wizard":
         st.markdown(f"<div class='wizard-box'>🧙‍♂️ <b>Fraction Wizard:</b><br>{message['text']}</div>", unsafe_allow_html=True)
-        try:
-            # Παραγωγή ήχου απευθείας από τη μνήμη RAM
-            audio_data = speak_text(message['text'])
-            st.audio(audio_data, format="audio/mp3")
-        except Exception as e:
-            st.caption(f"🔊 Audio helper loaded. Press Play to listen!")
+        # Εισαγωγή του έξυπνου κουμπιού ήχου που παίζει μέσω του browser
+        st.markdown(javascript_speak(message['text'], i), unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
     else:
         st.markdown(f"<div class='class-box'>👦👧 <b>Our Class:</b> {message['text']}</div>", unsafe_allow_html=True)
