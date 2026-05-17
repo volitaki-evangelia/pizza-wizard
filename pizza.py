@@ -1,76 +1,51 @@
 import streamlit as st
 import google.generativeai as genai
 import os
+from gtts import gTTS
+import io
 
 # Ρύθμιση της σελίδας
 st.set_page_config(page_title="The Great Pizza Rescue", page_icon="🍕", layout="centered")
 
-# Custom CSS για παιδικό στυλ, μεγάλα γράμματα και έντονα χρώματα!
+# Custom CSS για παιδικό στυλ
 st.markdown("""
     <style>
-    .stApp {
-        background-color: #FFFDF0; /* Γλυκό κίτρινο/κρεμ φόντο */
-    }
-    <h1> {
-        color: #FF5733; /* Έντονο πορτοκαλί-κόκκινο */
-        font-family: 'Comic Sans MS', 'Chalkboard SE', cursive, sans-serif;
-        font-size: 42px !important;
-        text-align: center;
-        text-shadow: 2px 2px #FFC300;
-    }
-    <h3> {
-        color: #C70039;
-        font-family: 'Comic Sans MS', sans-serif;
-        text-align: center;
-        font-size: 24px !important;
-    }
-    .wizard-box {
-        background-color: #E8F8F5;
-        border-left: 8px solid #1ABC9C;
-        border-radius: 15px;
-        padding: 20px;
-        font-size: 20px !important;
-        font-family: 'Comic Sans MS', sans-serif;
-        box-shadow: 3px 3px 10px rgba(0,0,0,0.1);
-        color: #1A5235;
-    }
-    .class-box {
-        background-color: #FEF9E7;
-        border-left: 8px solid #F1C40F;
-        border-radius: 15px;
-        padding: 15px;
-        font-size: 18px !important;
-        font-family: 'Comic Sans MS', sans-serif;
-        margin-top: 10px;
-        color: #7D6608;
-    }
+    .stApp { background-color: #FFFDF0; }
+    h1 { color: #FF5733; font-family: 'Comic Sans MS', cursive, sans-serif; text-align: center; font-size: 42px !important; text-shadow: 2px 2px #FFC300; }
+    h3 { color: #C70039; font-family: 'Comic Sans MS', sans-serif; text-align: center; font-size: 24px !important; }
+    .wizard-box { background-color: #E8F8F5; border-left: 8px solid #1ABC9C; border-radius: 15px; padding: 20px; font-size: 20px !important; font-family: 'Comic Sans MS', sans-serif; color: #1A5235; }
+    .class-box { background-color: #FEF9E7; border-left: 8px solid #F1C40F; border-radius: 15px; padding: 15px; font-size: 18px !important; font-family: 'Comic Sans MS', sans-serif; margin-top: 10px; color: #7D6608; }
     </style>
 """, unsafe_allow_html=True)
 
-# Τίτλος με εικονίδια
 st.markdown("<h1>🍕 THE GREAT PIZZA RESCUE 🍕</h1>", unsafe_allow_html=True)
 st.markdown("<h3>✨ STEM & Fractions Magic Game! ✨</h3>", unsafe_allow_html=True)
 st.markdown("---")
 
-# Ανάκτηση API Key από τα Secrets
+# Ανάκτηση API Key
 api_key = st.secrets.get("GEMINI_API_KEY", os.getenv("GEMINI_API_KEY"))
-
 if not api_key:
     st.error("⚠️ Configuration Error! Please check your GEMINI_API_KEY.")
     st.stop()
 
-# Ρύθμιση του AI Μοντέλου
 genai.configure(api_key=api_key)
-
-# Χαλάρωση των φίλτρων ασφαλείας για να μην μπλοκάρει τις μαθηματικές ερωτήσεις
 safety_settings = [
     {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
     {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
     {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
     {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
 ]
-
 model = genai.GenerativeModel('gemini-2.5-flash', safety_settings=safety_settings)
+
+# Λειτουργία για μετατροπή κειμένου σε ήχο (στα αγγλικά)
+def speak_text(text_to_speak):
+    # Καθαρίζουμε τα emojis από το κείμενο για να μην προσπαθεί να τα διαβάσει η φωνή
+    clean_text = ''.join(c for c in text_to_speak if c.isalnum() or c.isspace() or c in ['.', ',', '?', '!'])
+    tts = gTTS(text=clean_text, lang='en', tld='com')
+    fp = io.BytesIO()
+    tts.write_to_fp(fp)
+    fp.seek(0)
+    return fp
 
 # Αρχικοποίηση παιχνιδιού
 if "chat_history" not in st.session_state:
@@ -93,6 +68,9 @@ if "chat_history" not in st.session_state:
 for message in st.session_state.chat_history:
     if message["role"] == "wizard":
         st.markdown(f"<div class='wizard-box'>🧙‍♂️ <b>Fraction Wizard:</b><br>{message['text']}</div>", unsafe_allow_html=True)
+        # Δημιουργία και εμφάνιση του Audio Player για τον Μάγο
+        audio_file = speak_text(message['text'])
+        st.audio(audio_file, format="audio/mp3")
         st.markdown("<br>", unsafe_allow_html=True)
     else:
         st.markdown(f"<div class='class-box'>👦👧 <b>Our Class:</b> {message['text']}</div>", unsafe_allow_html=True)
@@ -119,7 +97,6 @@ if submit_button and user_input:
         response = chat.send_message(user_input)
         st.session_state.chat_history.append({"role": "wizard", "text": response.text})
     
-    # Εφέ "Μπαλόνια" αν η απάντηση περιέχει λέξεις νίκης
     if any(word in response.text.lower() for word in ["correct", "next level", "win", "🎉", "awesome", "perfect"]):
         st.balloons()
         
