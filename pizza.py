@@ -105,4 +105,4 @@ st.markdown("---")
 # Φόρμα απάντησης
 with st.form(key="pizza_form", clear_on_submit=True):
     st.markdown("### 📝 Enter your Magical Answer here:")
-    user_input = st.text_input("", placeholder="Type your answer to the Wizard
+    user_input = st.text_input("", placeholder="Type your answer to the Wizard")
