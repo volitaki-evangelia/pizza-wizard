@@ -1,7 +1,6 @@
 import streamlit as st
 import google.generativeai as genai
 import os
-import streamlit.components.v1 as components
 
 # Ρύθμιση της σελίδας
 st.set_page_config(page_title="The Great Pizza Rescue", page_icon="🍕", layout="centered")
@@ -62,36 +61,28 @@ if "chat_history" not in st.session_state:
 for message in st.session_state.chat_history:
     if message["role"] == "wizard":
         st.markdown(f"<div class='wizard-box'>🧙‍♂️ <b>Fraction Wizard:</b><br>{message['text']}</div>", unsafe_allow_html=True)
-        
-        # Καθαρισμός κειμένου από emojis και ειδικούς χαρακτήρες για την ομιλία
-        clean_text = ''.join(c for c in message['text'] if c.isalnum() or c.isspace() or c in ['.', ',', '?', '!'])
-        clean_text = clean_text.replace("'", "").replace('"', "")
-        
-        # 🔊 Δημιουργία ενός αόρατου/μικρού iframe με κουμπί που χρησιμοποιεί τη φωνή του ίδιου του Browser
-        audio_html = f"""
-        <div style="margin-top: 10px;">
-            <button onclick="speak()" style="background-color: #FF5733; color: white; border: none; padding: 10px 20px; font-size: 16px; font-family: 'Comic Sans MS', sans-serif; font-weight: bold; border-radius: 10px; cursor: pointer; box-shadow: 2px 2px 5px rgba(0,0,0,0.1);">
-                🔊 Listen to the Wizard!
-            </button>
-        </div>
-        <script>
-            function speak() {{
-                window.speechSynthesis.cancel();
-                var msg = new SpeechSynthesisUtterance("{clean_text}");
-                msg.lang = 'en-US';
-                msg.rate = 0.85; // Λίγο πιο αργά για τα παιδιά
-                msg.pitch = 1.1; // Λίγο πιο μαγική/παιδική χροιά
-                window.speechSynthesis.speak(msg);
-            }}
-            // Αυτόματη ανάγνωση στο πρώτο φόρτωμα
-            setTimeout(speak, 500);
-        </script>
-        """
-        components.html(audio_html, height=60)
         st.markdown("<br>", unsafe_allow_html=True)
     else:
         st.markdown(f"<div class='class-box'>👦👧 <b>Our Class:</b> {message['text']}</div>", unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
+
+# 🔊 ΑΥΤΟΜΑΤΗ ΦΩΝΗ: Παίρνει το τελευταίο μήνυμα του Μάγου και το διαβάζει αυτόματα με το που φορτώνει η σελίδα!
+if st.session_state.chat_history and st.session_state.chat_history[-1]["role"] == "wizard":
+    last_text = st.session_state.chat_history[-1]["text"]
+    clean_text = ''.join(c for c in last_text if c.isalnum() or c.isspace() or c in ['.', ',', '?', '!'])
+    clean_text = clean_text.replace("'", "").replace('"', "")
+    
+    # Εισαγωγή ασφαλούς script που εκτελείται απευθείας στην κεντρική σελίδα
+    st.components.v1.html(f"""
+        <script>
+            window.parent.speechSynthesis.cancel();
+            var speech = new window.parent.SpeechSynthesisUtterance("{clean_text}");
+            speech.lang = 'en-US';
+            speech.rate = 0.85;
+            speech.pitch = 1.1;
+            window.parent.speechSynthesis.speak(speech);
+        </script>
+    """, height=0, width=0)
 
 st.markdown("---")
 
