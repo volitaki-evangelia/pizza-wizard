@@ -62,4 +62,47 @@ if "chat_history" not in st.session_state:
         "You will give the class 3 simple, fun puzzles about math fractions using a pizza pie as a clear example. "
         "Level 1: Halves (1/2). Level 2: Quarters (1/4 or 3/4). Level 3: A question about equal vs unequal parts. "
         "Rules: 1. Use lots of emojis (🍕, 🧙‍♂️, ✨) and clear, encouraging English suitable for elementary school pupils. "
-        "2. Start
+        "2. Start IMMEDIATELY by introducing yourself with a nice magical welcome and giving ONLY Level 1. Then STOP and wait for their reply. "
+        "3. If they are correct, congratulate them warmly and unlock the next level. "
+        "4. If they give an incorrect answer, encourage them, give a gentle hint, and ask them to try again."
+    )
+    try:
+        chat = model.start_chat(history=[])
+        response = chat.send_message(system_prompt)
+        st.session_state.chat_history.append({"role": "wizard", "text": response.text})
+    except Exception as e:
+        st.error("🧙‍♂️ The Wizard is charging his magic wand! Please refresh the page in 10 seconds. ✨")
+        st.stop()
+
+# Εμφάνιση της συνομιλίας
+for i, message in enumerate(st.session_state.chat_history):
+    if message["role"] == "wizard":
+        st.markdown(f"<div class='wizard-box'>🧙‍♂️ <b>Fraction Wizard:</b><br>{message['text']}</div>", unsafe_allow_html=True)
+        
+        # Καθαρισμός κειμένου για την JavaScript
+        clean_text = ''.join(c for c in message['text'] if c.isalnum() or c.isspace() or c in ['.', ',', '?', '!'])
+        clean_text = clean_text.replace("'", "").replace('"', "")
+        
+        # 🔊 Κουμπί Ήχου μέσω Browser (Πλήρως διορθωμένο)
+        html_button = f"""
+        <button class="speak-btn" onclick="
+            window.speechSynthesis.cancel();
+            var speech = new SpeechSynthesisUtterance('{clean_text}');
+            speech.lang = 'en-US';
+            speech.rate = 0.9;
+            speech.pitch = 1.1;
+            window.speechSynthesis.speak(speech);
+        ">🔊 Listen to the Wizard!</button>
+        """
+        st.markdown(html_button, unsafe_allow_html=True)
+        st.markdown("<br>", unsafe_allow_html=True)
+    else:
+        st.markdown(f"<div class='class-box'>👦👧 <b>Our Class:</b> {message['text']}</div>", unsafe_allow_html=True)
+        st.markdown("<br>", unsafe_allow_html=True)
+
+st.markdown("---")
+
+# Φόρμα απάντησης
+with st.form(key="pizza_form", clear_on_submit=True):
+    st.markdown("### 📝 Enter your Magical Answer here:")
+    user_input = st.text_input("", placeholder="Type your answer to the Wizard
