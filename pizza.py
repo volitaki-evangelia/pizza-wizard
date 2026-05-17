@@ -2,12 +2,12 @@ import streamlit as st
 import google.generativeai as genai
 import os
 
-# 1. Custom CSS για παιδικό στυλ, μεγάλα γράμματα και έντονα χρώματα!
+# Ρύθμιση της σελίδας
 st.set_page_config(page_title="The Great Pizza Rescue", page_icon="🍕", layout="centered")
 
+# Custom CSS για παιδικό στυλ, μεγάλα γράμματα και έντονα χρώματα!
 st.markdown("""
     <style>
-    /* Αλλαγή φόντου και γραμματοσειράς για παιδιά */
     .stApp {
         background-color: #FFFDF0; /* Γλυκό κίτρινο/κρεμ φόντο */
     }
@@ -24,7 +24,6 @@ st.markdown("""
         text-align: center;
         font-size: 24px !important;
     }
-    /* Στυλ για τα μηνύματα του Μάγου */
     .wizard-box {
         background-color: #E8F8F5;
         border-left: 8px solid #1ABC9C;
@@ -35,7 +34,6 @@ st.markdown("""
         box-shadow: 3px 3px 10px rgba(0,0,0,0.1);
         color: #1A5235;
     }
-    /* Στυλ για τις απαντήσεις της τάξης */
     .class-box {
         background-color: #FEF9E7;
         border-left: 8px solid #F1C40F;
@@ -50,18 +48,18 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Τίτλος με εικονίδια
-st.markdown("<h1>🍕 THE GREAT PIZZA RESCUE 🍕</h1>", unsafe_allowed_html=True)
-st.markdown("<h3>✨ STEM & Fractions Magic Game! ✨</h3>", unsafe_allowed_html=True)
+st.markdown("<h1>🍕 THE GREAT PIZZA RESCUE 🍕</h1>", unsafe_allow_html=True)
+st.markdown("<h3>✨ STEM & Fractions Magic Game! ✨</h3>", unsafe_allow_html=True)
 st.markdown("---")
 
-# Ανάκτηση API Key
+# Ανάκτηση API Key από τα Secrets
 api_key = st.secrets.get("GEMINI_API_KEY", os.getenv("GEMINI_API_KEY"))
 
 if not api_key:
     st.error("⚠️ Configuration Error! Please check your GEMINI_API_KEY.")
     st.stop()
 
-# Ρύθμιση του AI Μοντέλου (Διορθωμένο σε gemini-2.5-flash)
+# Ρύθμιση του AI Μοντέλου
 genai.configure(api_key=api_key)
 model = genai.GenerativeModel('gemini-2.5-flash')
 
@@ -89,7 +87,7 @@ for message in st.session_state.chat_history:
         st.markdown("<br>", unsafe_allow_html=True)
     else:
         st.markdown(f"<div class='class-box'>👦👧 <b>Our Class:</b> {message['text']}</div>", unsafe_allow_html=True)
-        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("<br>", unsafe_allowed_html=False) # standard streamlit fallback
 
 st.markdown("---")
 
@@ -113,7 +111,7 @@ if submit_button and user_input:
         st.session_state.chat_history.append({"role": "wizard", "text": response.text})
     
     # Εφέ "Μπαλόνια" αν η απάντηση περιέχει λέξεις νίκης
-    if any(word in response.text.lower() for word in ["correct", "next level", "win", "🎉", "awesome"]):
+    if any(word in response.text.lower() for word in ["correct", "next level", "win", "🎉", "awesome", "perfect"]):
         st.balloons()
         
     st.rerun()
