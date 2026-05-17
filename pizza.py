@@ -47,7 +47,7 @@ st.markdown("""
         color: #7D6608;
     }
     </style>
-""", unsafe_allowed_allowed=True)
+""", unsafe_allow_html=True)
 
 # Τίτλος με εικονίδια
 st.markdown("<h1>🍕 THE GREAT PIZZA RESCUE 🍕</h1>", unsafe_allowed_html=True)
@@ -85,11 +85,11 @@ if "chat_history" not in st.session_state:
 # Εμφάνιση της συνομιλίας με όμορφα παιδικά πλαίσια
 for message in st.session_state.chat_history:
     if message["role"] == "wizard":
-        st.markdown(f"<div class='wizard-box'>🧙‍♂️ <b>Fraction Wizard:</b><br>{message['text']}</div>", unsafe_allowed_html=True)
-        st.markdown("<br>", unsafe_allowed_html=True)
+        st.markdown(f"<div class='wizard-box'>🧙‍♂️ <b>Fraction Wizard:</b><br>{message['text']}</div>", unsafe_allow_html=True)
+        st.markdown("<br>", unsafe_allow_html=True)
     else:
-        st.markdown(f"<div class='class-box'>👦👧 <b>Our Class:</b> {message['text']}</div>", unsafe_allowed_html=True)
-        st.markdown("<br>", unsafe_allowed_html=True)
+        st.markdown(f"<div class='class-box'>👦👧 <b>Our Class:</b> {message['text']}</div>", unsafe_allow_html=True)
+        st.markdown("<br>", unsafe_allow_html=True)
 
 st.markdown("---")
 
@@ -112,7 +112,7 @@ if submit_button and user_input:
         response = chat.send_message(user_input)
         st.session_state.chat_history.append({"role": "wizard", "text": response.text})
     
-    # Εφέ "Μπαλόνια" αν η απάντηση περιέχει λέξεις νίκης (προαιρετικό/διασκεδαστικό)
+    # Εφέ "Μπαλόνια" αν η απάντηση περιέχει λέξεις νίκης
     if any(word in response.text.lower() for word in ["correct", "next level", "win", "🎉", "awesome"]):
         st.balloons()
         
