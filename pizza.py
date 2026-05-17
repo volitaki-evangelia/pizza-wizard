@@ -1,7 +1,6 @@
 import streamlit as st
 import google.generativeai as genai
 import os
-import urllib.parse
 
 # Ρύθμιση της σελίδας
 st.set_page_config(page_title="The Great Pizza Rescue", page_icon="🍕", layout="centered")
@@ -14,6 +13,23 @@ st.markdown("""
     h3 { color: #C70039; font-family: 'Comic Sans MS', sans-serif; text-align: center; font-size: 24px !important; }
     .wizard-box { background-color: #E8F8F5; border-left: 8px solid #1ABC9C; border-radius: 15px; padding: 20px; font-size: 20px !important; font-family: 'Comic Sans MS', sans-serif; color: #1A5235; }
     .class-box { background-color: #FEF9E7; border-left: 8px solid #F1C40F; border-radius: 15px; padding: 15px; font-size: 18px !important; font-family: 'Comic Sans MS', sans-serif; margin-top: 10px; color: #7D6608; }
+    
+    /* Όμορφο κουμπί για τον ήχο */
+    .speak-btn {
+        background-color: #FF5733;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        text-align: center;
+        font-size: 16px;
+        margin: 10px 0px;
+        cursor: pointer;
+        border-radius: 10px;
+        font-family: 'Comic Sans MS', sans-serif;
+        font-weight: bold;
+        box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+    }
+    .speak-btn:hover { background-color: #C70039; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -50,23 +66,35 @@ if "chat_history" not in st.session_state:
         "3. If they are correct, congratulate them warmly and unlock the next level. "
         "4. If they give an incorrect answer, encourage them, give a gentle hint, and ask them to try again."
     )
-    chat = model.start_chat(history=[])
-    response = chat.send_message(system_prompt)
-    st.session_state.chat_history.append({"role": "wizard", "text": response.text})
+    try:
+        chat = model.start_chat(history=[])
+        response = chat.send_message(system_prompt)
+        st.session_state.chat_history.append({"role": "wizard", "text": response.text})
+    except Exception as e:
+        st.error("🧙‍♂️ The Wizard is charging his magic wand! Please refresh the page in 10 seconds. ✨")
+        st.stop()
 
 # Εμφάνιση της συνομιλίας
 for message in st.session_state.chat_history:
     if message["role"] == "wizard":
         st.markdown(f"<div class='wizard-box'>🧙‍♂️ <b>Fraction Wizard:</b><br>{message['text']}</div>", unsafe_allow_html=True)
         
-        # Καθαρισμός κειμένου από emojis για την ηχητική αναπαραγωγή
+        # Καθαρισμός κειμένου από emojis και ειδικούς χαρακτήρες για να μην μπερδεύεται η JavaScript
         clean_text = ''.join(c for c in message['text'] if c.isalnum() or c.isspace() or c in ['.', ',', '?', '!'])
-        encoded_text = urllib.parse.quote(clean_text)
+        clean_text = clean_text.replace("'", "\\'").replace Lucifer = clean_text.replace('"', '\\"')
         
-        # Επίσημο, δωρεάν εξωτερικό Link ήχου που ΔΕΝ χρησιμοποιεί τον δίσκο του server
-        audio_url = f"https://translate.google.com/translate_tts?ie=UTF-8&tl=en&client=tw-ob&q={encoded_text}"
-        st.audio(audio_url, format="audio/mp3")
-        
+        # 🔊 Νέο Κουμπί Ήχου: Παίζει 100% εγγυημένα χρησιμοποιώντας τον browser του υπολογιστή σου!
+        html_button = f"""
+        <button class="speak-btn" onclick="
+            window.speechSynthesis.cancel();
+            var speech = new SpeechSynthesisUtterance('{clean_text}');
+            speech.lang = 'en-US';
+            speech.rate = 0.9; /* Λίγο πιο αργά για να καταλαβαίνουν τα παιδιά */
+            speech.pitch = 1.1; /* Λίγο πιο παιδική/μαγική φωνή */
+            window.speechSynthesis.speak(speech);
+        ">🔊 Listen to the Wizard!</button>
+        """
+        st.markdown(html_button, unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
     else:
         st.markdown(f"<div class='class-box'>👦👧 <b>Our Class:</b> {message['text']}</div>", unsafe_allow_html=True)
@@ -89,9 +117,14 @@ if submit_button and user_input:
         chat_history_formatted.append({"role": role, "parts": [msg["text"]]})
     
     with st.spinner("🧙‍♂️ The Wizard is waving his magic wand... ✨"):
-        chat = model.start_chat(history=chat_history_formatted[:-1])
-        response = chat.send_message(user_input)
-        st.session_state.chat_history.append({"role": "wizard", "text": response.text})
+        try:
+            chat = model.start_chat(history=chat_history_formatted[:-1])
+            response = chat.send_message(user_input)
+            st.session_state.chat_history.append({"role": "wizard", "text": response.text})
+        except Exception as e:
+            st.warning("🔮 Magic limit reached! The Wizard is resting for 5 seconds. Please re-submit your answer now!")
+            st.session_state.chat_history.pop()
+            st.stop()
     
     if any(word in response.text.lower() for word in ["correct", "next level", "win", "🎉", "awesome", "perfect"]):
         st.balloons()
