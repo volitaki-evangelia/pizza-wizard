@@ -105,4 +105,33 @@ st.markdown("---")
 # Φόρμα απάντησης
 with st.form(key="pizza_form", clear_on_submit=True):
     st.markdown("### 📝 Enter your Magical Answer here:")
-    user_input = st.text_input("", placeholder="Type your answer to the Wizard")
+    user_input = st.text_input("", placeholder="Type your answer to the Wizard...", key="user_ans")
+    submit_button = st.form_submit_button(label="🚀 Cast the Math Spell!")
+
+if submit_button and user_input:
+    st.session_state.chat_history.append({"role": "user", "text": user_input})
+    
+    chat_history_formatted = []
+    for msg in st.session_state.chat_history:
+        role = "user" if msg["role"] == "user" else "model"
+        chat_history_formatted.append({"role": role, "parts": [msg["text"]]})
+    
+    with st.spinner("🧙‍♂️ The Wizard is waving his magic wand... ✨"):
+        try:
+            chat = model.start_chat(history=chat_history_formatted[:-1])
+            response = chat.send_message(user_input)
+            st.session_state.chat_history.append({"role": "wizard", "text": response.text})
+        except Exception as e:
+            st.warning("🔮 Magic limit reached! The Wizard is resting for 5 seconds. Please re-submit your answer now!")
+            st.session_state.chat_history.pop()
+            st.stop()
+    
+    if any(word in response.text.lower() for word in ["correct", "next level", "win", "🎉", "awesome", "perfect"]):
+        st.balloons()
+        
+    st.rerun()
+
+# Κουμπί επανεκκίνησης
+if st.button("🔄 Restart Magic Mission"):
+    st.session_state.clear()
+    st.rerun()
