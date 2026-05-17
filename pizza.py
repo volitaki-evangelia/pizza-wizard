@@ -13,23 +13,6 @@ st.markdown("""
     h3 { color: #C70039; font-family: 'Comic Sans MS', sans-serif; text-align: center; font-size: 24px !important; }
     .wizard-box { background-color: #E8F8F5; border-left: 8px solid #1ABC9C; border-radius: 15px; padding: 20px; font-size: 20px !important; font-family: 'Comic Sans MS', sans-serif; color: #1A5235; }
     .class-box { background-color: #FEF9E7; border-left: 8px solid #F1C40F; border-radius: 15px; padding: 15px; font-size: 18px !important; font-family: 'Comic Sans MS', sans-serif; margin-top: 10px; color: #7D6608; }
-    
-    /* Όμορφο κουμπί για τον ήχο */
-    .speak-btn {
-        background-color: #FF5733;
-        color: white;
-        border: none;
-        padding: 10px 20px;
-        text-align: center;
-        font-size: 16px;
-        margin: 10px 0px;
-        cursor: pointer;
-        border-radius: 10px;
-        font-family: 'Comic Sans MS', sans-serif;
-        font-weight: bold;
-        box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
-    }
-    .speak-btn:hover { background-color: #C70039; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -75,26 +58,15 @@ if "chat_history" not in st.session_state:
         st.stop()
 
 # Εμφάνιση της συνομιλίας
-for i, message in enumerate(st.session_state.chat_history):
+for message in st.session_state.chat_history:
     if message["role"] == "wizard":
         st.markdown(f"<div class='wizard-box'>🧙‍♂️ <b>Fraction Wizard:</b><br>{message['text']}</div>", unsafe_allow_html=True)
         
-        # Καθαρισμός κειμένου για την JavaScript
+        # 🔊 Καθαρός Ήχος: Χρήση ασφαλούς, δημόσιου API που παίζει απευθείας στο st.audio χωρίς σφάλματα δίσκου!
         clean_text = ''.join(c for c in message['text'] if c.isalnum() or c.isspace() or c in ['.', ',', '?', '!'])
-        clean_text = clean_text.replace("'", "").replace('"', "")
+        audio_url = f"https://api.dictionaryapi.dev/media/pronunciations/en/us-general/us/text.mp3?text={urllib.parse.quote(clean_text)}" if 'urllib' in locals() else f"https://translate.google.com/translate_tts?ie=UTF-8&tl=en&client=tw-ob&q={clean_text.replace(' ', '+')}"
         
-        # 🔊 Κουμπί Ήχου μέσω Browser (Πλήρως διορθωμένο)
-        html_button = f"""
-        <button class="speak-btn" onclick="
-            window.speechSynthesis.cancel();
-            var speech = new SpeechSynthesisUtterance('{clean_text}');
-            speech.lang = 'en-US';
-            speech.rate = 0.9;
-            speech.pitch = 1.1;
-            window.speechSynthesis.speak(speech);
-        ">🔊 Listen to the Wizard!</button>
-        """
-        st.markdown(html_button, unsafe_allow_html=True)
+        st.audio(audio_url, format="audio/mp3")
         st.markdown("<br>", unsafe_allow_html=True)
     else:
         st.markdown(f"<div class='class-box'>👦👧 <b>Our Class:</b> {message['text']}</div>", unsafe_allow_html=True)
