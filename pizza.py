@@ -2,7 +2,6 @@ import streamlit as st
 import google.generativeai as genai
 import os
 
-
 # Ρύθμιση της σελίδας
 st.set_page_config(page_title="The Great Pizza Rescue", page_icon="🍕", layout="centered")
 
@@ -45,6 +44,20 @@ st.markdown("""
         margin-top: 10px;
         color: #7D6608;
     }
+    .speak-btn {
+        background-color: #1ABC9C;
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        margin: 4px 2px;
+        cursor: pointer;
+        border-radius: 8px;
+        font-family: 'Comic Sans MS', sans-serif;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -57,13 +70,12 @@ st.markdown("---")
 api_key = st.secrets.get("GEMINI_API_KEY", os.getenv("GEMINI_API_KEY"))
 
 if not api_key:
-    st.error("⚠️ Configuration Error! Please check your GEMINI_API_KEY in Streamlit Secrets.")
+    st.error("⚠️ Configuration Error! Please check your GEMINI_API_KEY.")
     st.stop()
 
 # Ρύθμιση του AI Μοντέλου
 genai.configure(api_key=api_key)
 
-# Βασικές ρυθμίσεις ασφαλείας
 safety_settings = [
     {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
     {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
@@ -72,6 +84,19 @@ safety_settings = [
 ]
 
 model = genai.GenerativeModel('gemini-2.5-flash', safety_settings=safety_settings)
+
+# Λειτουργία JavaScript για φωνητική ανάγνωση από τον browser του χρήστη
+def javascript_speak(text_to_speak, msg_id):
+    # Καθαρισμός κειμένου από μονά/διπλά εισαγωγικά για να μην σπάει η JavaScript
+    clean_text = text_to_speak.replace("'", "\\'").replace('"', '\\"').replace('\n', ' ')
+    js_code = f"""
+    <button class="speak-btn" onclick="
+        var msg = new SpeechSynthesisUtterance('{clean_text}');
+        msg.lang = 'en-US';
+        window.speechSynthesis.speak(msg);
+    ">🔊 Listen to the Wizard!</button>
+    """
+    return js_code
 
 # Αρχικοποίηση παιχνιδιού
 if "chat_history" not in st.session_state:
@@ -91,9 +116,11 @@ if "chat_history" not in st.session_state:
     st.session_state.chat_history.append({"role": "wizard", "text": response.text})
 
 # Εμφάνιση της συνομιλίας
-for message in st.session_state.chat_history:
+for i, message in enumerate(st.session_state.chat_history):
     if message["role"] == "wizard":
         st.markdown(f"<div class='wizard-box'>🧙‍♂️ <b>Fraction Wizard:</b><br>{message['text']}</div>", unsafe_allow_html=True)
+        # Εισαγωγή του έξυπνου κουμπιού ήχου που παίζει μέσω του browser
+        st.markdown(javascript_speak(message['text'], i), unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
     else:
         st.markdown(f"<div class='class-box'>👦👧 <b>Our Class:</b> {message['text']}</div>", unsafe_allow_html=True)
