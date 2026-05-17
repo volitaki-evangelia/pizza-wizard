@@ -1,6 +1,7 @@
 import streamlit as st
 import google.generativeai as genai
 import os
+import streamlit.components.v1 as components
 
 # Ρύθμιση της σελίδας
 st.set_page_config(page_title="The Great Pizza Rescue", page_icon="🍕", layout="centered")
@@ -62,11 +63,31 @@ for message in st.session_state.chat_history:
     if message["role"] == "wizard":
         st.markdown(f"<div class='wizard-box'>🧙‍♂️ <b>Fraction Wizard:</b><br>{message['text']}</div>", unsafe_allow_html=True)
         
-        # 🔊 Καθαρός Ήχος: Χρήση ασφαλούς, δημόσιου API που παίζει απευθείας στο st.audio χωρίς σφάλματα δίσκου!
+        # Καθαρισμός κειμένου από emojis και ειδικούς χαρακτήρες για την ομιλία
         clean_text = ''.join(c for c in message['text'] if c.isalnum() or c.isspace() or c in ['.', ',', '?', '!'])
-        audio_url = f"https://api.dictionaryapi.dev/media/pronunciations/en/us-general/us/text.mp3?text={urllib.parse.quote(clean_text)}" if 'urllib' in locals() else f"https://translate.google.com/translate_tts?ie=UTF-8&tl=en&client=tw-ob&q={clean_text.replace(' ', '+')}"
+        clean_text = clean_text.replace("'", "").replace('"', "")
         
-        st.audio(audio_url, format="audio/mp3")
+        # 🔊 Δημιουργία ενός αόρατου/μικρού iframe με κουμπί που χρησιμοποιεί τη φωνή του ίδιου του Browser
+        audio_html = f"""
+        <div style="margin-top: 10px;">
+            <button onclick="speak()" style="background-color: #FF5733; color: white; border: none; padding: 10px 20px; font-size: 16px; font-family: 'Comic Sans MS', sans-serif; font-weight: bold; border-radius: 10px; cursor: pointer; box-shadow: 2px 2px 5px rgba(0,0,0,0.1);">
+                🔊 Listen to the Wizard!
+            </button>
+        </div>
+        <script>
+            function speak() {{
+                window.speechSynthesis.cancel();
+                var msg = new SpeechSynthesisUtterance("{clean_text}");
+                msg.lang = 'en-US';
+                msg.rate = 0.85; // Λίγο πιο αργά για τα παιδιά
+                msg.pitch = 1.1; // Λίγο πιο μαγική/παιδική χροιά
+                window.speechSynthesis.speak(msg);
+            }}
+            // Αυτόματη ανάγνωση στο πρώτο φόρτωμα
+            setTimeout(speak, 500);
+        </script>
+        """
+        components.html(audio_html, height=60)
         st.markdown("<br>", unsafe_allow_html=True)
     else:
         st.markdown(f"<div class='class-box'>👦👧 <b>Our Class:</b> {message['text']}</div>", unsafe_allow_html=True)
