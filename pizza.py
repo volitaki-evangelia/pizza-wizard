@@ -1,6 +1,8 @@
 import streamlit as st
 import google.generativeai as genai
 import os
+from gtts import gTTS
+import io
 
 # Ρύθμιση της σελίδας
 st.set_page_config(page_title="The Great Pizza Rescue", page_icon="🍕", layout="centered")
@@ -36,6 +38,17 @@ safety_settings = [
 ]
 model = genai.GenerativeModel('gemini-2.5-flash', safety_settings=safety_settings)
 
+# Λειτουργία Text-to-Speech αποκλειστικά στη μνήμη RAM (In-Memory BytesIO)
+def generate_audio(text_to_speak):
+    # Καθαρισμός κειμένου από emojis για να διαβάζεται σωστά
+    clean_text = ''.join(c for c in text_to_speak if c.isalnum() or c.isspace() or c in ['.', ',', '?', '!'])
+    
+    mp3_fp = io.BytesIO()
+    tts = gTTS(text=clean_text, lang='en', tld='com')
+    tts.write_to_fp(mp3_fp)
+    mp3_fp.seek(0)
+    return mp3_fp
+
 # Αρχικοποίηση παιχνιδιού
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
@@ -61,28 +74,18 @@ if "chat_history" not in st.session_state:
 for message in st.session_state.chat_history:
     if message["role"] == "wizard":
         st.markdown(f"<div class='wizard-box'>🧙‍♂️ <b>Fraction Wizard:</b><br>{message['text']}</div>", unsafe_allow_html=True)
+        
+        # 🔊 Επίσημο Widget Ήχου του Streamlit (Δημιουργείται στη μνήμη, δεν κολλάει ποτέ)
+        try:
+            audio_data = generate_audio(message['text'])
+            st.audio(audio_data, format="audio/mp3")
+        except Exception as e:
+            pass
+            
         st.markdown("<br>", unsafe_allow_html=True)
     else:
         st.markdown(f"<div class='class-box'>👦👧 <b>Our Class:</b> {message['text']}</div>", unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
-
-# 🔊 ΑΥΤΟΜΑΤΗ ΦΩΝΗ: Παίρνει το τελευταίο μήνυμα του Μάγου και το διαβάζει αυτόματα με το που φορτώνει η σελίδα!
-if st.session_state.chat_history and st.session_state.chat_history[-1]["role"] == "wizard":
-    last_text = st.session_state.chat_history[-1]["text"]
-    clean_text = ''.join(c for c in last_text if c.isalnum() or c.isspace() or c in ['.', ',', '?', '!'])
-    clean_text = clean_text.replace("'", "").replace('"', "")
-    
-    # Εισαγωγή ασφαλούς script που εκτελείται απευθείας στην κεντρική σελίδα
-    st.components.v1.html(f"""
-        <script>
-            window.parent.speechSynthesis.cancel();
-            var speech = new window.parent.SpeechSynthesisUtterance("{clean_text}");
-            speech.lang = 'en-US';
-            speech.rate = 0.85;
-            speech.pitch = 1.1;
-            window.parent.speechSynthesis.speak(speech);
-        </script>
-    """, height=0, width=0)
 
 st.markdown("---")
 
@@ -107,7 +110,7 @@ if submit_button and user_input:
             st.session_state.chat_history.append({"role": "wizard", "text": response.text})
         except Exception as e:
             st.warning("🔮 Magic limit reached! The Wizard is resting for 5 seconds. Please re-submit your answer now!")
-            st.session_state.chat_history.pop()
+            st.session_state.session_state.chat_history.pop()
             st.stop()
     
     if any(word in response.text.lower() for word in ["correct", "next level", "win", "🎉", "awesome", "perfect"]):
