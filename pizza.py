@@ -2,6 +2,7 @@ import streamlit as st
 import google.generativeai as genai
 import os
 
+
 # Ρύθμιση της σελίδας
 st.set_page_config(page_title="The Great Pizza Rescue", page_icon="🍕", layout="centered")
 
