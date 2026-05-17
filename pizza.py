@@ -11,14 +11,14 @@ st.markdown("""
     .stApp {
         background-color: #FFFDF0; /* Γλυκό κίτρινο/κρεμ φόντο */
     }
-    h1 {
+    <h1> {
         color: #FF5733; /* Έντονο πορτοκαλί-κόκκινο */
         font-family: 'Comic Sans MS', 'Chalkboard SE', cursive, sans-serif;
         font-size: 42px !important;
         text-align: center;
         text-shadow: 2px 2px #FFC300;
     }
-    h3 {
+    <h3> {
         color: #C70039;
         font-family: 'Comic Sans MS', sans-serif;
         text-align: center;
@@ -61,33 +61,42 @@ if not api_key:
 
 # Ρύθμιση του AI Μοντέλου
 genai.configure(api_key=api_key)
-model = genai.GenerativeModel('gemini-2.5-flash')
+
+# Χαλάρωση των φίλτρων ασφαλείας για να μην μπλοκάρει τις μαθηματικές ερωτήσεις
+safety_settings = [
+    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+    {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+    {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+]
+
+model = genai.GenerativeModel('gemini-2.5-flash', safety_settings=safety_settings)
 
 # Αρχικοποίηση παιχνιδιού
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
     system_prompt = (
-        "Act as the 'Fraction Wizard' (a friendly, extremely enthusiastic, and playful fairy-tale wizard) "
-        "in an interactive visual game for 8-10 year old kids. The game is called 'The Great Pizza Rescue'. "
-        "You will give the class 3 sequential, fun riddles about fractions using pizza as an example. "
-        "Level 1: Halves (1/2). Level 2: Quarters (1/4 or 3/4). Level 3: A tricky question about unequal parts (critical thinking). "
-        "Rules: 1. Use lots of emojis (🍕, 🧙‍♂️, ✨, 🔴) and clear, highly engaging English for kids. "
-        "2. Start IMMEDIATELY by welcoming them with a magical intro and giving ONLY Level 1. Then STOP and wait for their reply. "
-        "3. If they are correct, celebrate with emojis like 🎉, 🌟, 💥 and unlock the next level. "
-        "4. If they make a mistake, don't give the answer! Give a magical, funny hint and encourage them to try again."
+        "Act as the 'Fraction Wizard' (a friendly, extremely enthusiastic, and playful math teacher wizard) "
+        "in an interactive story-game for 8-10 year old school kids. The game is called 'The Great Pizza Rescue'. "
+        "You will give the class 3 simple, fun puzzles about math fractions using a pizza pie as a clear example. "
+        "Level 1: Halves (1/2). Level 2: Quarters (1/4 or 3/4). Level 3: A question about equal vs unequal parts. "
+        "Rules: 1. Use lots of emojis (🍕, 🧙‍♂️, ✨) and clear, encouraging English suitable for elementary school pupils. "
+        "2. Start IMMEDIATELY by introducing yourself with a nice magical welcome and giving ONLY Level 1. Then STOP and wait for their reply. "
+        "3. If they are correct, congratulate them warmly and unlock the next level. "
+        "4. If they give an incorrect answer, encourage them, give a gentle hint, and ask them to try again."
     )
     chat = model.start_chat(history=[])
     response = chat.send_message(system_prompt)
     st.session_state.chat_history.append({"role": "wizard", "text": response.text})
 
-# Εμφάνιση της συνομιλίας με όμορφα παιδικά πλαίσια
+# Εμφάνιση της συνομιλίας
 for message in st.session_state.chat_history:
     if message["role"] == "wizard":
         st.markdown(f"<div class='wizard-box'>🧙‍♂️ <b>Fraction Wizard:</b><br>{message['text']}</div>", unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
     else:
         st.markdown(f"<div class='class-box'>👦👧 <b>Our Class:</b> {message['text']}</div>", unsafe_allow_html=True)
-        st.markdown("<br>", unsafe_allowed_html=False) # standard streamlit fallback
+        st.markdown("<br>", unsafe_allow_html=True)
 
 st.markdown("---")
 
